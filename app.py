@@ -16,9 +16,11 @@ app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 
 mysql = MySQL(app)
 
+
 # Create a table if it doesn't exist
 def create_table():
     cursor = mysql.connection.cursor()
+
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS students (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -27,55 +29,96 @@ def create_table():
             grade VARCHAR(10) NOT NULL
         )
     ''')
+
     mysql.connection.commit()
     cursor.close()
 
-create_table()
 
 @app.route('/')
 def index():
     cursor = mysql.connection.cursor()
     cursor.execute('SELECT * FROM students')
+
     students = cursor.fetchall()
+
     cursor.close()
+
     return render_template('index.html', students=students)
+
 
 @app.route('/add', methods=['GET', 'POST'])
 def add_student():
+
     if request.method == 'POST':
+
         name = request.form['name']
         age = request.form['age']
         grade = request.form['grade']
+
         cursor = mysql.connection.cursor()
-        cursor.execute("INSERT INTO students (name, age, grade) VALUES (%s, %s, %s)", (name, age, grade))
+
+        cursor.execute(
+            "INSERT INTO students (name, age, grade) VALUES (%s, %s, %s)",
+            (name, age, grade)
+        )
+
         mysql.connection.commit()
+
         cursor.close()
+
         return redirect(url_for('index'))
+
     return render_template('add.html')
+
 
 @app.route('/edit/<int:id>', methods=['GET', 'POST'])
 def edit_student(id):
+
     cursor = mysql.connection.cursor()
+
     if request.method == 'POST':
+
         name = request.form['name']
         age = request.form['age']
         grade = request.form['grade']
-        cursor.execute("UPDATE students SET name=%s, age=%s, grade=%s WHERE id=%s", (name, age, grade, id))
+
+        cursor.execute(
+            "UPDATE students SET name=%s, age=%s, grade=%s WHERE id=%s",
+            (name, age, grade, id)
+        )
+
         mysql.connection.commit()
+
         cursor.close()
+
         return redirect(url_for('index'))
-    cursor.execute("SELECT * FROM students WHERE id = %s", (id,))
+
+    cursor.execute("SELECT * FROM students WHERE id=%s", (id,))
+
     student = cursor.fetchone()
+
     cursor.close()
+
     return render_template('edit.html', student=student)
+
 
 @app.route('/delete/<int:id>')
 def delete_student(id):
+
     cursor = mysql.connection.cursor()
-    cursor.execute("DELETE FROM students WHERE id = %s", (id,))
+
+    cursor.execute("DELETE FROM students WHERE id=%s", (id,))
+
     mysql.connection.commit()
+
     cursor.close()
+
     return redirect(url_for('index'))
 
+
 if __name__ == '__main__':
-    app.run(debug=True)
+
+    with app.app_context():
+        create_table()
+
+    app.run(host='0.0.0.0', port=5000, debug=True)
